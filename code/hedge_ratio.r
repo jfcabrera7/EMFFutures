@@ -1,51 +1,47 @@
-#...
+# EMF FUTURES ##################################################################
 
-# Package descriptions
-# "urca" = Unit Root and Cointegration Tests for Time Series Data
-# "rugarch" = Univariate GARCH Models
-# "xts" = eXtensible Time Series
-# "egcm" = Engle-Granger Cointegration Models
-# "EnvStats" = Package for Environmental Statistics, Including US EPA Guidance
-# "tidyverse" = Easily Install and Load the 'Tidyverse' packages
-
-# Installing packages
+## Installing and loading packages =============================================
 # install.packages("urca")
 # install.packages("egcm")
 # install.packages("EnvStats")
 # install.packages("tidyverse")
+install.packages("pacman")
+pacman::p_load(pacman,
+               dplyr,
+               tidyr,
+               stringr,
+               lubridate,
+               httr,
+               ggvis,
+               ggplot2,
+               shiny,
+               rio,
+               rmarkdown
+               )
+library(datasets)
 
-# Activating packages
-library(urca)
-library(rugarch)
-library(xts)
-library(TTR)
-library(egcm)
-library(EnvStats)
-library(tidyverse)
-
-# Setting working directory
+## Setting working directory ===================================================
 getwd()
 setwd("C:/Users/juanf/OneDrive/GitRepos/emf_futures/data")
 
-# Importing .csv data
-# dat <- as_tibble(read.csv("MainData01_CSV.csv"))                    # as_tibble function is not a must
+## Importing data ==============================================================
+# dat <- as_tibble(read.csv("MainData01_CSV.csv"))
 dat <- read.csv("MainData01_CSV.csv")
-names(dat)
-head(dat, n=10)
+# names(dat)
+# head(dat, n = 5)
 #attach(dat)
 
-# Data cleaning and sorting
-dat$Dates <- as.Date(Dates, "%m/%d/%Y")                             # Convert char into dates
-#dat$Dates <- NULL                                                  # Remove a column in df
-dat <- dat[order(dat$Dates, decreasing = FALSE),]                   # Sort df by one or more columns
+## Data cleaning and sorting ===================================================
+dat$Dates <- as.Date(dat$Dates, "%m/%d/%Y")           # Convert char into dates
+#dat$Dates <- NULL                                    # Remove a column
+dat <- dat[order(dat$Dates, decreasing = FALSE),]     # Sort by column(s)
 
-# TO DO ---> Replace all non-numeric values for NA
-
+## Calculating the Hedge Ratio =================================================
 # Calculating lagged values
 dat$FMEMAdjPriceLag1 <- lag(dat$FMEMAdjPrice)
 dat$EMFAdjPriceLag1 <- lag(dat$EMFAdjPrice)
 dat$VWOAdjPriceLag1 <- lag(dat$VWOAdjPrice)
-dat$FTSEPriceLag1 <- lag(dat$FTSEPrice)                             # Not sure why it was multiplied by 100
+dat$FTSEPriceLag1 <- lag(dat$FTSEPrice)
 
 # Calculating returns - daily
 dat$FMEMAdjDreturn <- (dat$FMEMAdjPrice / dat$FMEMAdjPriceLag1) - 1
@@ -53,19 +49,29 @@ dat$EMFAdjDreturn <- (dat$EMFAdjPrice / dat$EMFAdjPriceLag1) - 1
 dat$VWOAdjDreturn <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
 dat$FTSEDreturn <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
 
+# Subsetting data to keep relevant variables
+keepvars <- c("Dates", 
+              "FMEMAdjDreturn",
+              "EMFAdjDreturn", 
+              "VWOAdjDreturn", 
+              "FTSEDreturn"
+              )
+dat2 <- dat[keepvars]
+# head(dat2)
+
 # Summary statistics of returns
-summary(dat$FMEMAdjDreturn)
-summary(dat$EMFAdjDreturn)
-summary(dat$VWOAdjDreturn)
-summary(dat$FTSEDreturn)
+summary(dat2$FMEMAdjDreturn)
+summary(dat2$EMFAdjDreturn)
+summary(dat2$VWOAdjDreturn)
+summary(dat2$FTSEDreturn)
 
 # Estimating the Hedge Ratio (OLS)
-lmodel <- lm(VWOAdjDreturn ~ EMFAdjDreturn, data = dat)
+lmodel <- lm(VWOAdjDreturn ~ EMFAdjDreturn, data = dat2)
 summary(lmodel)
 slope <- lmodel$coefficients[2]
 intercept <- lmodel$coefficients[1]
 
-dat %>%
+dat2 %>%
   ggplot(aes(x = EMFAdjDreturn, y = VWOAdjDreturn)) +
   geom_point(colour = "red") +
   geom_smooth(method = "lm", fill = NA)

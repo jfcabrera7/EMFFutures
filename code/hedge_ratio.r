@@ -25,10 +25,10 @@ library(tidyverse)
 
 # Setting working directory
 getwd()
-setwd("C:/Users/juanf/OneDrive/Github/EMFFutures/Data")
+setwd("C:/Users/juanf/OneDrive/GitRepos/emf_futures/data")
 
 # Importing .csv data
-dat <- as_tibble(read.csv("MainData01_CSV.csv"))                    # as_tibble function is not a must
+# dat <- as_tibble(read.csv("MainData01_CSV.csv"))                    # as_tibble function is not a must
 dat <- read.csv("MainData01_CSV.csv")
 names(dat)
 head(dat, n=10)

@@ -1,12 +1,12 @@
 #...
 
 # Package descriptions
-#"urca" = Unit Root and Cointegration Tests for Time Series Data
-#"rugarch" = Univariate GARCH Models
-#"xts" = eXtensible Time Series
-#"egcm" = Engle-Granger Cointegration Models
-#"EnvStats" = Package for Environmental Statistics, Including US EPA Guidance
-#"tidyverse" = Easily Install and Load the 'Tidyverse' packages
+# "urca" = Unit Root and Cointegration Tests for Time Series Data
+# "rugarch" = Univariate GARCH Models
+# "xts" = eXtensible Time Series
+# "egcm" = Engle-Granger Cointegration Models
+# "EnvStats" = Package for Environmental Statistics, Including US EPA Guidance
+# "tidyverse" = Easily Install and Load the 'Tidyverse' packages
 
 # Installing packages
 # install.packages("urca")

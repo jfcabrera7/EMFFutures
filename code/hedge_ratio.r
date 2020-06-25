@@ -26,11 +26,12 @@ getwd()
 setwd("C:/Users/juanf/OneDrive/GitRepos/emf_futures/data")
 
 ## Importing data ==============================================================
+# rm(list = ls())
 dat <- as_tibble(read.csv("MainData01_CSV.csv"))
 # dat <- read.csv("MainData01_CSV.csv")
 # names(dat)
 # head(dat, n = 5)
-#attach(dat)
+# attach(dat)
 
 ## Data cleaning and sorting ===================================================
 dat$Dates <- as.Date(dat$Dates, "%m/%d/%Y")           # Convert char into dates
@@ -45,83 +46,51 @@ dat$VWOAdjPriceLag1 <- lag(dat$VWOAdjPrice)
 dat$FTSEPriceLag1 <- lag(dat$FTSEPrice)
 
 # Calculating returns - daily
-dat$FMEMAdjDReturn <- (dat$FMEMAdjPrice / dat$FMEMAdjPriceLag1) - 1
-dat$EMFAdjDReturn <- (dat$EMFAdjPrice / dat$EMFAdjPriceLag1) - 1
-dat$VWOAdjDReturn <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
-dat$FTSEDReturn <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
+dat$emf_dret <- (dat$EMFAdjPrice / dat$EMFAdjPriceLag1) - 1
+dat$fmem_dret <- (dat$FMEMAdjPrice / dat$FMEMAdjPriceLag1) - 1
+dat$vwo_dret <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
+dat$ftse_dret <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
 
 # Subsetting data to keep relevant variables
-keepvars <- c("Dates",
-              "FMEMAdjDReturn",
-              "EMFAdjDReturn",
-              "VWOAdjDReturn",
-              "FTSEDReturn"
+keepvars <- c("emf_dret",
+              "fmem_dret",
+              "vwo_dret",
+              "ftse_dret"
               )
-
 dat2 <- dat[keepvars]
 
 # Summary statistics of key variables ==========================================
 head(dat2)
 summary(dat2)
 plot(dat2)
-plot(dat2$EMFAdjDReturn, dat2$VWOAdjDReturn)
 
 ## Calculating the Hedge Ratio =================================================
 
 # Calculating the hedge ratio for all pairs (VAR-COV)
-hr_emf_vwo <- cov(dat2$VWOAdjDReturn,
-                  dat2$EMFAdjDReturn,
-                  use = "pairwise.complete.obs"
-                  ) /
-                  var(dat2$EMFAdjDReturn,
-                      na.rm=TRUE
-                      )
-
-hr_fmem_vwo <- cov(dat2$VWOAdjDReturn,
-                   dat2$FMEMAdjDReturn,
-                   use = "pairwise.complete.obs"
-                   ) /
-                   var(dat2$FMEMAdjDReturn,
-                       na.rm=TRUE
-                       )
-hr_emf_ftse <- cov(dat2$FTSEDReturn,
-                   dat2$EMFAdjDReturn,
-                   use = "pairwise.complete.obs"
-                   ) /
-                   var(dat2$EMFAdjDReturn,
-                       na.rm=TRUE
-                       )
-hr_fmem_ftse <- cov(dat2$FTSEDReturn,
-                    dat2$FMEMAdjDReturn,
-                    use = "pairwise.complete.obs"
-                    ) /
-                    var(dat2$FMEMAdjDReturn,
-                        na.rm=TRUE
-                        )
-hr_vwo_ftse <- cov(dat2$FTSEDReturn,
-                   dat2$VWOAdjDReturn,
-                   use = "pairwise.complete.obs"
-                   ) /
-                   var(dat2$VWOAdjDReturn,
-                       na.rm=TRUE
-                       )
-
-
-
-hedge.ratio <- function(xvar, yvar)
-{
+hedge.ratio <- function(xvar, yvar) {
   cov(yvar,
       xvar,
       use = "pairwise.complete.obs"
-      ) / var(xvar, na.rm=TRUE)
-}
+  ) / var(xvar, na.rm=TRUE)
+  }
 
+hr_emf_vwo <- hedge.ratio(dat2$emf_dret, dat2$vwo_dret)
+hr_emf_ftse <- hedge.ratio(dat2$emf_dret, dat2$ftse_dret)
+hr_fmem_vwo <- hedge.ratio(dat2$fmem_dret, dat2$vwo_dret)
+hr_fmem_ftse <- hedge.ratio(dat2$fmem_dret, dat2$ftse_dret)
+hr_vwo_ftse <- hedge.ratio(dat2$vwo_dret, dat2$ftse_dret)
 
+# Code to loop through columns of dataframe (IGNORE)
+# for (col1 in 1:ncol(dat2)) {
+#   for (col2 in 1:ncol(dat2)) {
+#     # print(dat2[,col1])
+#     name <- paste("hr", col1, col2, sep="_")
+#     assign(name, hedge.ratio(dat2[,col1], dat2[,col2]))
+#   }
+# }
 
-hr.emf.vwo <- hedge.ratio(dat2$EMFAdjDReturn, dat2$VWOADjDReturn)
-
-
-
+# Code to calculate the VAR-COV matrix (IGNORE)
+# cov_matrix <- cov(dat2[,1:ncol(dat2)], use = "pairwise.complete.obs")
 
 # Estimating the Hedge Ratio (OLS) for VWO ~ EMF
 lm_emf_vwo <- lm(VWOAdjDReturn ~ EMFAdjDReturn, data = dat2)

@@ -5,7 +5,8 @@
 # install.packages("egcm")
 # install.packages("EnvStats")
 # install.packages("tidyverse")
-install.packages("pacman")
+
+# install.packages("pacman")
 pacman::p_load(pacman,
                dplyr,
                tidyr,
@@ -16,27 +17,27 @@ pacman::p_load(pacman,
                ggplot2,
                shiny,
                rio,
-               rmarkdown
+               rmarkdown,
+               tibble
                )
-library(datasets)
 
 ## Setting working directory ===================================================
 getwd()
 setwd("C:/Users/juanf/OneDrive/GitRepos/emf_futures/data")
 
 ## Importing data ==============================================================
-# dat <- as_tibble(read.csv("MainData01_CSV.csv"))
-dat <- read.csv("MainData01_CSV.csv")
+dat <- as_tibble(read.csv("MainData01_CSV.csv"))
+# dat <- read.csv("MainData01_CSV.csv")
 # names(dat)
 # head(dat, n = 5)
 #attach(dat)
 
 ## Data cleaning and sorting ===================================================
 dat$Dates <- as.Date(dat$Dates, "%m/%d/%Y")           # Convert char into dates
-#dat$Dates <- NULL                                    # Remove a column
 dat <- dat[order(dat$Dates, decreasing = FALSE),]     # Sort by column(s)
 
-## Calculating the Hedge Ratio =================================================
+## Creating key variables ======================================================
+
 # Calculating lagged values
 dat$FMEMAdjPriceLag1 <- lag(dat$FMEMAdjPrice)
 dat$EMFAdjPriceLag1 <- lag(dat$EMFAdjPrice)
@@ -44,37 +45,106 @@ dat$VWOAdjPriceLag1 <- lag(dat$VWOAdjPrice)
 dat$FTSEPriceLag1 <- lag(dat$FTSEPrice)
 
 # Calculating returns - daily
-dat$FMEMAdjDreturn <- (dat$FMEMAdjPrice / dat$FMEMAdjPriceLag1) - 1
-dat$EMFAdjDreturn <- (dat$EMFAdjPrice / dat$EMFAdjPriceLag1) - 1
-dat$VWOAdjDreturn <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
-dat$FTSEDreturn <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
+dat$FMEMAdjDReturn <- (dat$FMEMAdjPrice / dat$FMEMAdjPriceLag1) - 1
+dat$EMFAdjDReturn <- (dat$EMFAdjPrice / dat$EMFAdjPriceLag1) - 1
+dat$VWOAdjDReturn <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
+dat$FTSEDReturn <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
 
 # Subsetting data to keep relevant variables
-keepvars <- c("Dates", 
-              "FMEMAdjDreturn",
-              "EMFAdjDreturn", 
-              "VWOAdjDreturn", 
-              "FTSEDreturn"
+keepvars <- c("Dates",
+              "FMEMAdjDReturn",
+              "EMFAdjDReturn",
+              "VWOAdjDReturn",
+              "FTSEDReturn"
               )
+
 dat2 <- dat[keepvars]
-# head(dat2)
 
-# Summary statistics of returns
-summary(dat2$FMEMAdjDreturn)
-summary(dat2$EMFAdjDreturn)
-summary(dat2$VWOAdjDreturn)
-summary(dat2$FTSEDreturn)
+# Summary statistics of key variables ==========================================
+head(dat2)
+summary(dat2)
+plot(dat2)
+plot(dat2$EMFAdjDReturn, dat2$VWOAdjDReturn)
 
-# Estimating the Hedge Ratio (OLS)
-lmodel <- lm(VWOAdjDreturn ~ EMFAdjDreturn, data = dat2)
-summary(lmodel)
-slope <- lmodel$coefficients[2]
-intercept <- lmodel$coefficients[1]
+## Calculating the Hedge Ratio =================================================
 
+# Calculating the hedge ratio for all pairs (VAR-COV)
+hr_emf_vwo <- cov(dat2$VWOAdjDReturn,
+                  dat2$EMFAdjDReturn,
+                  use = "pairwise.complete.obs"
+                  ) /
+                  var(dat2$EMFAdjDReturn,
+                      na.rm=TRUE
+                      )
+
+hr_fmem_vwo <- cov(dat2$VWOAdjDReturn,
+                   dat2$FMEMAdjDReturn,
+                   use = "pairwise.complete.obs"
+                   ) /
+                   var(dat2$FMEMAdjDReturn,
+                       na.rm=TRUE
+                       )
+hr_emf_ftse <- cov(dat2$FTSEDReturn,
+                   dat2$EMFAdjDReturn,
+                   use = "pairwise.complete.obs"
+                   ) /
+                   var(dat2$EMFAdjDReturn,
+                       na.rm=TRUE
+                       )
+hr_fmem_ftse <- cov(dat2$FTSEDReturn,
+                    dat2$FMEMAdjDReturn,
+                    use = "pairwise.complete.obs"
+                    ) /
+                    var(dat2$FMEMAdjDReturn,
+                        na.rm=TRUE
+                        )
+hr_vwo_ftse <- cov(dat2$FTSEDReturn,
+                   dat2$VWOAdjDReturn,
+                   use = "pairwise.complete.obs"
+                   ) /
+                   var(dat2$VWOAdjDReturn,
+                       na.rm=TRUE
+                       )
+
+
+
+hedge.ratio <- function(xvar, yvar)
+{
+  cov(yvar,
+      xvar,
+      use = "pairwise.complete.obs"
+      ) / var(xvar, na.rm=TRUE)
+}
+
+
+
+hr.emf.vwo <- hedge.ratio(dat2$EMFAdjDReturn, dat2$VWOADjDReturn)
+
+
+
+
+# Estimating the Hedge Ratio (OLS) for VWO ~ EMF
+lm_emf_vwo <- lm(VWOAdjDReturn ~ EMFAdjDReturn, data = dat2)
+summary(lm_emf_vwo)
+# slope <- lm_emf_vwo$coefficients[2]
+# intercept <- lm_emf_vwo$coefficients[1]
+
+lm_fmem_vwo <- lm(VWOAdjDReturn ~ FMEMAdjDReturn, data = dat2)
+summary(lm_fmem_vwo)
+
+# Plotting the regression line (ggplot)
 dat2 %>%
-  ggplot(aes(x = EMFAdjDreturn, y = VWOAdjDreturn)) +
+  ggplot(aes(x = EMFAdjDReturn, y = VWOAdjDReturn)) +
   geom_point(colour = "red") +
   geom_smooth(method = "lm", fill = NA)
 
-hr_EMF_VWO <- cov(dat$VWOAdjDreturn,dat$EMFAdjDreturn, use = "pairwise.complete.obs") / var(dat$EMFAdjDreturn, na.rm=TRUE)
-hr_EMF_VWO
+
+# Plotting the regression line (plot)
+plot(dat2$EMFAdjDReturn, dat2$VWOAdjDReturn,
+     col = "red3",
+     pch = 19,
+     main = "EMF vs. VWO Daily Returns",
+     xlab = "EMF Return",
+     ylab = "VWO Return"
+)
+abline(lm(dat2$VWOAdjDReturn ~ dat2$EMFAdjDReturn))

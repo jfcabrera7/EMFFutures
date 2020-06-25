@@ -80,3 +80,4 @@ hr_fmem_vwo <- hedge.ratio(dat2$fmem_dret, dat2$vwo_dret)
 hr_fmem_ftse <- hedge.ratio(dat2$fmem_dret, dat2$ftse_dret)
 hr_vwo_ftse <- hedge.ratio(dat2$vwo_dret, dat2$ftse_dret)
 
+he_emf_vwo <- 1 - ()

@@ -65,14 +65,12 @@ summary(dat2)
 plot(dat2)
 
 ## Calculating the Hedge Ratio =================================================
-
-# Calculating the hedge ratio for all pairs (VAR-COV)
 hedge.ratio <- function(xvar, yvar) {
-  cov(yvar,
-      xvar,
-      use = "pairwise.complete.obs"
-  ) / var(xvar, na.rm=TRUE)
-  }
+  cov(xvar,
+      yvar,
+      use="pairwise.complete.obs"
+      ) / var(xvar, na.rm=TRUE)
+}
 
 hr_emf_vwo <- hedge.ratio(dat2$emf_dret, dat2$vwo_dret)
 hr_emf_ftse <- hedge.ratio(dat2$emf_dret, dat2$ftse_dret)
@@ -80,4 +78,12 @@ hr_fmem_vwo <- hedge.ratio(dat2$fmem_dret, dat2$vwo_dret)
 hr_fmem_ftse <- hedge.ratio(dat2$fmem_dret, dat2$ftse_dret)
 hr_vwo_ftse <- hedge.ratio(dat2$vwo_dret, dat2$ftse_dret)
 
-he_emf_vwo <- 1 - ()
+# Calculating the hedging effectiveness ========================================
+he_emf_vwo <- 1 - ((var(dat2$vwo_dret, na.rm=TRUE) +
+                    hr_emf_vwo ^ 2 *
+                    var(dat2$emf_dret, na.rm=TRUE) - 
+                    2 * hr_emf_vwo * 
+                    cov(dat2$emf_dret,
+                        dat2$vwo_dret,
+                        use="pairwise.complete.obs")) 
+                   / var(dat2$vwo_dret, na.rm=TRUE))

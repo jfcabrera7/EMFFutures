@@ -7,19 +7,20 @@
 # install.packages("tidyverse")
 
 # install.packages("pacman")
-pacman::p_load(pacman,
-               dplyr,
-               tidyr,
-               stringr,
-               lubridate,
-               httr,
-               ggvis,
-               ggplot2,
-               shiny,
-               rio,
-               rmarkdown,
-               tibble
-               )
+pacman::p_load(
+    pacman,
+    dplyr,
+    tidyr,
+    stringr,
+    lubridate,
+    httr,
+    ggvis,
+    ggplot2,
+    shiny,
+    rio,
+    rmarkdown,
+    tibble
+)
 
 ## Setting working directory ===================================================
 getwd()
@@ -52,24 +53,24 @@ dat$vwo_dret <- (dat$VWOAdjPrice / dat$VWOAdjPriceLag1) - 1
 dat$ftse_dret <- (dat$FTSEPrice / dat$FTSEPriceLag1) - 1
 
 # Subsetting data to keep relevant variables
-keepvars <- c("emf_dret",
-              "fmem_dret",
-              "vwo_dret",
-              "ftse_dret"
-              )
+keepvars <- c(
+    "emf_dret",
+    "fmem_dret",
+    "vwo_dret",
+    "ftse_dret"
+)
 dat2 <- dat[keepvars]
+dat2 <- na.omit(dat2)
 
-# Summary statistics of key variables ==========================================
+## Summary statistics of key variables =========================================
 head(dat2)
 summary(dat2)
 plot(dat2)
 
 ## Calculating the Hedge Ratio =================================================
-hedge.ratio <- function(xvar, yvar) {
-  cov(xvar,
-      yvar,
-      use="pairwise.complete.obs"
-      ) / var(xvar, na.rm=TRUE)
+# (Table 3 - Daily)
+hedge.ratio <- function(xvar, yvar){
+    cov(xvar, yvar) / var(xvar)
 }
 
 hr_emf_vwo <- hedge.ratio(dat2$emf_dret, dat2$vwo_dret)
@@ -78,12 +79,15 @@ hr_fmem_vwo <- hedge.ratio(dat2$fmem_dret, dat2$vwo_dret)
 hr_fmem_ftse <- hedge.ratio(dat2$fmem_dret, dat2$ftse_dret)
 hr_vwo_ftse <- hedge.ratio(dat2$vwo_dret, dat2$ftse_dret)
 
-# Calculating the hedging effectiveness ========================================
-he_emf_vwo <- 1 - ((var(dat2$vwo_dret, na.rm=TRUE) +
-                    hr_emf_vwo ^ 2 *
-                    var(dat2$emf_dret, na.rm=TRUE) - 
-                    2 * hr_emf_vwo * 
-                    cov(dat2$emf_dret,
-                        dat2$vwo_dret,
-                        use="pairwise.complete.obs")) 
-                   / var(dat2$vwo_dret, na.rm=TRUE))
+## Calculating the hedging effectiveness =======================================
+# (Table 12 - OLS Daily)
+hedge.effec <- function(xvar, yvar, hr_value){
+    1 - (var(yvar) + hr_value^2 * var(xvar) - 2*hr_value * cov(xvar, yvar))/
+        var(yvar)
+}
+
+he_emf_vwo <- hedge.effec(dat2$emf_dret, dat2$vwo_dret, hr_emf_vwo)
+he_emf_ftse <- hedge.effec(dat2$emf_dret, dat2$ftse_dret, hr_emf_ftse)
+he_fmem_vwo <- hedge.effec(dat2$fmem_dret, dat2$vwo_dret, hr_fmem_vwo)
+he_fmem_ftse <- hedge.effec(dat2$fmem_dret, dat2$ftse_dret, hr_fmem_ftse)
+he_vwo_ftse <- hedge.effec(dat2$vwo_dret, dat2$ftse_dret, hr_vwo_ftse)

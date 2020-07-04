@@ -91,3 +91,15 @@ he_emf_ftse <- hedge.effec(dat2$emf_dret, dat2$ftse_dret, hr_emf_ftse)
 he_fmem_vwo <- hedge.effec(dat2$fmem_dret, dat2$vwo_dret, hr_fmem_vwo)
 he_fmem_ftse <- hedge.effec(dat2$fmem_dret, dat2$ftse_dret, hr_fmem_ftse)
 he_vwo_ftse <- hedge.effec(dat2$vwo_dret, dat2$ftse_dret, hr_vwo_ftse)
+
+## Calculating the mean of the hedged position =================================
+# (Table 4)
+mean.hedged <- function(fut, spot, hr){
+    mean(spot) + hr*mean(fut)
+}
+
+mh_emf_vwo <- mean.hedged(dat2$emf_dret, dat2$vwo_dret, hr_emf_vwo)
+mh_emf_ftse <- mean.hedged(dat2$emf_dret, dat2$ftse_dret, hr_emf_ftse)
+mh_fmem_vwo <- mean.hedged(dat2$fmem_dret, dat2$vwo_dret, hr_fmem_vwo)
+mh_fmem_ftse <- mean.hedged(dat2$fmem_dret, dat2$ftse_dret, hr_fmem_ftse)
+mh_vwo_ftse <- mean.hedged(dat2$vwo_dret, dat2$ftse_dret, hr_vwo_ftse)
